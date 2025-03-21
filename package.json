@@ -7,13 +7,25 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
+    "@primeuix/themes": "^1.0.0",
+    "@tailwindcss/vite": "^4.0.15",
+    "axios": "^1.8.3",
     "core-js": "^3.8.3",
+    "jwt-decode": "^4.0.0",
+    "primevue": "^4.3.2",
+    "shadcn-vue": "^1.0.3",
+    "tailwindcss-primeui": "^0.5.1",
+    "vform": "^2.1.2",
     "vue": "^3.2.13",
     "vue-router": "^4.0.3"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.15",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-router": "~5.0.0",
-    "@vue/cli-service": "~5.0.0"
+    "@vue/cli-service": "~5.0.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
   }
 }
