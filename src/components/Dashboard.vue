@@ -49,8 +49,28 @@
             </div>
         </Dialog>
 
-        <div>
-            <button class="post-btn" @click="visibleCadastrar = true">Cadastrar</button>
+        <Dialog v-model:visible="visibleDistribuir" modal header="Distribuir processo" :style="{ width: '25rem' }">
+            <span class="text-surface-500 dark:text-surface-400 block mb-8">Distruibuição do processo.</span>
+            <div class="flex items-center gap-4 mb-4">
+                <label for="novo-assunto" class="font-semibold w-24">Novo procurador</label>
+                <Select v-model="distribuirProcurador" editable :options="procuradores?.map(procurador => { return {name: procurador.nomePessoa, code: procurador.id} })" optionLabel="name" placeholder="Selecione o procurador" class="w-full md:w-56" />
+            </div>
+            <div class="flex justify-end gap-2">
+                <Button type="button" label="Cancelar" severity="secondary" @click="visibleCadastrar = false">Cancelar</Button>
+                <Button type="button" label="Salvar" @click="async () => { await putDistribuir(); visibleDistribuir = false}">Distribuir</Button>
+            </div>
+        </Dialog>
+
+        <div class="flex">
+            <button v-if="tipoPessoa !== 'Cliente'" class="post-btn" @click="visibleCadastrar = true">Cadastrar</button>
+            <div v-if="tipoPessoa === 'Admin'">
+                <InputText type="text" placeholder="Número do processo" v-model="filtrarProcesso" />
+                <button class="post-btn" @click="getProcessos">Buscar</button>
+            </div>
+            <div v-if="tipoPessoa === 'Procurador' || tipoPessoa === 'Admin'">
+                <Select v-model="procuradorVisualizar" editable :options="procuradores?.map(procurador => { return {name: procurador.nomePessoa, code: procurador.id} })" optionLabel="name" placeholder="Selecione o procurador" class="w-full md:w-56" />
+                <button class="post-btn" @click="$router.push(`/visualizar-processos/${procuradorVisualizar.code}`)">Buscar</button>
+            </div>
         </div>
 
         <div>
@@ -85,10 +105,11 @@
                     <input v-model="processo.statusProcesso" />
                 </div>
                 <div v-else>{{ processo.statusProcesso }}</div>
-                <div>
+                <div class="flex">
                     <button v-if="tipoPessoa !== 'Cliente' && !processo.editando" class="edit-btn" @click="() => {objEditar = processo ; visible = true}">Editar</button>
                     <button v-if="tipoPessoa !== 'Cliente' && processo.editando" class="save-btn" @click="updateProcesso(processo)">Salvar</button>
                     <button v-if="tipoPessoa !== 'Cliente'" class="delete-btn" @click="deleteProcesso(processo.id)">Excluir</button>
+                    <button v-if="tipoPessoa !== 'Cliente'" class="save-btn" @click="() => {distribuirProcesso = processo.id; visibleDistribuir = true}">Distribuir</button>
                 </div>
             </div>
         </div>
@@ -98,7 +119,7 @@
 
 <script>
     import axios from "axios";
-    import { Button } from "primevue";
+    import { Button, InputText, Select } from "primevue";
     import Dialog from 'primevue/dialog';
     import Paginator from 'primevue/paginator';
 
@@ -107,7 +128,9 @@
         components: {
             Dialog,
             Button,
-            Paginator
+            Paginator,
+            Select,
+            InputText
         },
         data() {
             return {
@@ -116,10 +139,16 @@
                 tipoPessoa: localStorage.getItem("tipoUsuario"),
                 visible: false,
                 visibleCadastrar: false,
+                visibleDistribuir: false,
                 paginatedProcessos: [],
+                procuradorVisualizar: 0,
+                filtrarProcesso: "",
                 currentPage: 1,    // Página inicial
                 rowsPerPage: 10,   // Quantidade de documentos por página
                 totalRecords: 0,   // Total de registros disponíveis
+                distribuirProcesso: 0,
+                distribuirProcurador: 0,
+                procuradores: [],
                 novoProcesso: {
                     assunto: "",
                     orgaoTramitacao: "",
@@ -139,25 +168,73 @@
                 this.currentPage = event.page + 1; 
                 this.updatePageProcessos();
             },
+            async getProcuradores() {
+                try {
+                    const token = localStorage.getItem("token");
+                    const response = await axios.get(`https://localhost:7091/Pessoa/procuradores`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    this.procuradores = response.data.body;
+                } catch (error) {
+                    console.error("Erro ao obter processos:", error);
+                }
+            },
+            async putDistribuir() {
+                try {
+                    const token = localStorage.getItem("token");
+                    await axios.put(`https://localhost:7091/Processo/${this.distribuirProcesso}/redistribuir`, {}, {
+                        headers: { Authorization: `Bearer ${token}` },
+                        params: {
+                            idNovoProcurador: this.distribuirProcurador.code
+                        }
+                    })
+                    this.getProcessos();
+                    this.$toast.add({
+                        severity: 'success',
+                        summary: 'Sucesso!',
+                        detail: 'Sucesso ao redistribuir processo.',
+                        life: 3000
+                    })
+                } catch (error) {
+                    this.$toast.add({
+                        severity: 'error',
+                        summary: 'Erro!',
+                        detail: 'Erro ao redistribuir processo.',
+                        life: 3000
+                    })
+                    console.log(error)
+                }
+            },
             async getProcessos() {
                 try {
                     const idPessoa = localStorage.getItem("id");
                     const token = localStorage.getItem("token");
                     if (this.tipoPessoa === "Cliente") {
                         const response = await axios.get(`https://localhost:7091/Processo/cliente/${idPessoa}/processos`, {
-                            headers: { Authorization: `Bearer ${token}` } });
+                            headers: { Authorization: `Bearer ${token}` },
+                            params: {
+                                 buscar: this.filtrarProcesso
+                            }});
                         this.processos = response.data.body;
                         this.totalRecords = this.processos.length;
                         this.updatePageProcessos();
                     } else if (this.tipoPessoa === "Procurador") {
                         const response = await axios.get(`https://localhost:7091/Processo/procurador/${idPessoa}/processos`, {
-                            headers: { Authorization: `Bearer ${token}` } });
+                            headers: { Authorization: `Bearer ${token}` },
+                            params: {
+                                 buscar: this.filtrarProcesso
+                            } });
                         this.processos = response.data.body;
                         this.totalRecords = this.processos.length;
                         this.updatePageProcessos();
                     } else if (this.tipoPessoa === "Admin") {
                         const response = await axios.get(`https://localhost:7091/Processo`, {
-                            headers: { Authorization: `Bearer ${token}` } });
+                            headers: { Authorization: `Bearer ${token}` },
+                            params: {
+                                 buscar: this.filtrarProcesso
+                            }
+                        }
+                        );
                         this.processos = response.data.body;
                         this.totalRecords = this.processos.length;
                         this.updatePageProcessos();
@@ -241,6 +318,7 @@
         },
         mounted() {
             this.getProcessos();
+            this.getProcuradores();
         }
     }
 </script>

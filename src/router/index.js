@@ -7,6 +7,7 @@ import PrazosView from '../views/PrazosView.vue'
 import CadastroView from '../views/CadastroView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import UsuarioView from '../views/UsuarioView.vue'
+import ProcessosVisualizeView from '@/views/ProcessosVisualizeView.vue'
 
 const routes = [
   {
@@ -38,6 +39,11 @@ const routes = [
     path: '/meus-processos',
     name: 'meus-processos',
     component: ProcessosView
+  },
+  {
+    path: '/visualizar-processos/:idProcurador',
+    name: 'visualizar-processos',
+    component: ProcessosVisualizeView
   },
   {
     path: '/perfil',
@@ -73,6 +79,10 @@ router.beforeEach((to, from, next) => {
   const isClient = localStorage.getItem("tipoUsuario") === "Cliente";
   const isProcurador = localStorage.getItem("tipoUsuario") === "Procurador";  
   const isAdmin = localStorage.getItem("tipoUsuario") === "Admin";
+
+  if (to.name === "visualizar-processos" && isClient) { 
+    return next("/"); 
+  }
 
   if (to.name === "usuarios" && !isAdmin) { 
     return next("/"); 
