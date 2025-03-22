@@ -174,7 +174,7 @@ export default {
                 this.$toast.add({
                     severity: 'success',
                     summary: 'Sucesso!',
-                    detail: 'Sucesso ao atualizar prazo.',
+                    detail: 'Sucesso ao atualizar documento.',
                     life: 3000 
                 });
                 this.getDocumentos();
@@ -182,7 +182,7 @@ export default {
                 this.$toast.add({
                     severity: 'error',
                     summary: 'Erro!',
-                    detail: 'Erro ao atualizar prazo.',
+                    detail: 'Erro ao atualizar documento.',
                     life: 3000 
                 });
                 console.error("Erro ao atualizar documento:", error);
